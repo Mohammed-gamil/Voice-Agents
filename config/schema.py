@@ -172,6 +172,7 @@ class ObservabilityConfig(StrictModel):
 class TenantConfig(StrictModel):
     tenant_id: str = ""
     display_name: str
+    extends: str | None = None
     pipeline: PipelineConfig = Field(default_factory=PipelineConfig)
     turn: TurnConfig = Field(default_factory=TurnConfig)
     vad: VADConfig = Field(default_factory=VADConfig)
