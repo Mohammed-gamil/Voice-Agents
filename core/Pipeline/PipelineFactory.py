@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from livekit.plugins import silero, deepgram, assemblyai, openai, anthropic, cartesia, elevenlabs, google, xai
+
 from config.schema import LLMConfig, PipelineConfig, RealtimeModelConfig, STTConfig, TTSConfig, VADConfig
 
 
@@ -44,8 +46,6 @@ def build_vad(config: VADConfig) -> Any | None:
     if config.provider == "none":
         return None
     if config.provider == "silero":
-        from livekit.plugins import silero
-
         return silero.VAD.load()
     if config.provider == "webrtc":
         return None
@@ -56,12 +56,8 @@ def build_stt(config: STTConfig) -> Any:
     if config.provider == "livekit_inference":
         return _descriptor(config.model, config.language)
     if config.provider == "deepgram":
-        from livekit.plugins import deepgram
-
         return deepgram.STT(model=_provider_model(config.model), language=config.language)
     if config.provider == "assemblyai":
-        from livekit.plugins import assemblyai
-
         return assemblyai.STT(model=_provider_model(config.model), language=config.language)
     raise ValueError(f"unsupported STT provider: {config.provider}")
 
@@ -70,14 +66,10 @@ def build_llm(config: LLMConfig) -> Any:
     if config.provider == "livekit_inference":
         return config.model
     if config.provider == "openai":
-        from livekit.plugins import openai
-
         if hasattr(openai, "responses"):
             return openai.responses.LLM(model=_provider_model(config.model), temperature=config.temperature)
         return openai.LLM(model=_provider_model(config.model), temperature=config.temperature)
     if config.provider == "anthropic":
-        from livekit.plugins import anthropic
-
         return anthropic.LLM(model=_provider_model(config.model), temperature=config.temperature)
     raise ValueError(f"unsupported LLM provider: {config.provider}")
 
@@ -86,16 +78,10 @@ def build_tts(config: TTSConfig) -> Any:
     if config.provider == "livekit_inference":
         return _descriptor(config.model, config.voice_id)
     if config.provider == "cartesia":
-        from livekit.plugins import cartesia
-
         return cartesia.TTS(model=_provider_model(config.model), voice=config.voice_id)
     if config.provider == "elevenlabs":
-        from livekit.plugins import elevenlabs
-
         return elevenlabs.TTS(model=_provider_model(config.model), voice_id=config.voice_id)
     if config.provider == "openai":
-        from livekit.plugins import openai
-
         return openai.TTS(model=_provider_model(config.model), voice=config.voice_id)
     raise ValueError(f"unsupported TTS provider: {config.provider}")
 
@@ -104,20 +90,14 @@ def build_realtime(config: RealtimeModelConfig | None) -> Any | None:
     if config is None:
         return None
     if config.provider == "openai_realtime":
-        from livekit.plugins import openai
-
         return openai.realtime.RealtimeModel(
             model=config.model,
             voice=config.voice,
             modalities=config.modalities,
         )
     if config.provider == "google_realtime":
-        from livekit.plugins import google
-
         return google.beta.realtime.RealtimeModel(model=config.model)
     if config.provider == "xai_realtime":
-        from livekit.plugins import xai
-
         return xai.realtime.RealtimeModel(model=config.model, voice=config.voice)
     raise ValueError(f"unsupported realtime provider: {config.provider}")
 
