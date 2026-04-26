@@ -1,0 +1,265 @@
+:root {
+  color-scheme: dark;
+  --bg: #111313;
+  --panel: #191d1d;
+  --panel-2: #202727;
+  --line: #344040;
+  --text: #f4f7f7;
+  --muted: #a9b5b5;
+  --accent: #39d98a;
+  --accent-2: #60a5fa;
+  --danger: #ff6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 30% 0%, #21312a 0, transparent 38%), var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 32px 0;
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  gap: 18px;
+}
+
+.panel {
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 32%);
+}
+
+.call-panel {
+  padding: 22px;
+  align-self: start;
+}
+
+.topbar,
+.transcript-head,
+.button-row,
+.meters,
+.chat-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar,
+.transcript-head {
+  justify-content: space-between;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+h1,
+h2 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 18px;
+}
+
+.status {
+  min-width: 92px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
+}
+
+.status.live {
+  color: #062114;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.status.error {
+  color: #280808;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.controls-grid {
+  display: grid;
+  gap: 13px;
+  margin-top: 24px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #0f1414;
+  color: var(--text);
+  padding: 11px 12px;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--accent-2);
+}
+
+.button-row {
+  margin-top: 20px;
+}
+
+button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #061b11;
+  font-weight: 700;
+}
+
+.meters {
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+}
+
+.meters > div {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.meter {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #0d1111;
+  border: 1px solid #263030;
+}
+
+.meter i {
+  display: block;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 80ms linear;
+}
+
+.transcript-panel {
+  min-height: min(720px, calc(100vh - 64px));
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.transcript-head {
+  padding: 18px 18px 0;
+}
+
+.transcript {
+  padding: 18px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty {
+  color: var(--muted);
+  margin: auto;
+}
+
+.message {
+  max-width: 82%;
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: #101616;
+  border: 1px solid #263030;
+  line-height: 1.45;
+}
+
+.message strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.message.local {
+  align-self: flex-end;
+  background: #112318;
+  border-color: #25583b;
+}
+
+.message.agent {
+  align-self: flex-start;
+  background: #111d27;
+  border-color: #26445e;
+}
+
+.message.interim {
+  opacity: 0.7;
+}
+
+.chat-form {
+  padding: 14px 18px 18px;
+}
+
+.chat-form input {
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    padding: 16px 0;
+  }
+
+  .transcript-panel {
+    min-height: 560px;
+  }
+}

@@ -1,0 +1,132 @@
+tenants:
+  acme_corp:
+    display_name: Acme Corp Assistant
+
+    pipeline:
+      mode: hybrid
+      stt:
+        provider: livekit_inference
+        model: deepgram/nova-3
+        language: multi
+      llm:
+        provider: livekit_inference
+        model: openai/gpt-5-mini
+        temperature: 0.7
+        max_tokens: 1024
+      tts:
+        provider: livekit_inference
+        model: cartesia/sonic-3
+        voice_id: 9626c31c-bec5-4cca-baa8-f8ba9e84c8bc
+      s2s_model:
+        provider: openai_realtime
+        model: gpt-realtime
+        voice: marin
+        modalities:
+          - text
+          - audio
+
+    turn:
+      interruption_mode: adaptive
+      allow_interruptions: true
+      min_endpointing_delay: 0.5
+      max_endpointing_delay: 6.0
+      min_interruption_duration: 0.5
+      min_interruption_words: 0
+      false_interruption_timeout: 2.0
+      resume_false_interruption: true
+      preemptive_generation: true
+
+    vad:
+      provider: silero
+      prewarm: true
+
+    agents:
+      triage:
+        class: TriageAgent
+        prompt_key: triage_system
+      routing:
+        rules:
+          - intent: sales
+            agent_class: SalesAgent
+            prompt_key: sales_system
+          - intent: support
+            agent_class: SupportAgent
+            prompt_key: support_system
+          - intent: billing
+            agent_class: BillingAgent
+            prompt_key: billing_system
+
+    prompts:
+      triage_system: |
+        You are Acme Corp's voice triage assistant. Identify whether the user
+        needs sales, support, or billing, then use the route_to_specialist tool.
+        Keep turns brief and natural for a live call.
+      sales_system: |
+        You are Acme Corp's sales assistant. Qualify leads, answer product
+        questions, and schedule a next step when the user is ready.
+      support_system: |
+        You are Acme Corp's support assistant. Diagnose the user's issue,
+        retrieve relevant context when tools are available, and create a ticket
+        when the issue needs follow-up.
+      billing_system: |
+        You are Acme Corp's billing assistant. Help with invoices, plan changes,
+        payment questions, and account updates.
+
+    tools:
+      mcp_servers:
+        - name: livekit_docs
+          url: https://docs.livekit.io/mcp
+          enabled: false
+      custom_actions:
+        - create_ticket
+        - update_crm_record
+        - send_summary_email
+
+    conversation:
+      greetings:
+        TriageAgent: "Hi, this is Acme Corp. How can I help you today?"
+        SalesAgent: "I can help with sales questions. What are you hoping to build?"
+        SupportAgent: "I can help troubleshoot that. Tell me what is happening."
+        BillingAgent: "I can help with billing. What account or invoice should we look at?"
+      tool_messages:
+        default: "Hmm, one moment please."
+        database_write: "Hmm, please wait while I add your data."
+        ticket_create: "Hmm, please wait while I create that ticket."
+        crm_update: "Hmm, please wait while I update the customer record."
+        email_send: "Hmm, please wait while I prepare that summary."
+      scenarios:
+        first_time_caller:
+          description: Caller has not used Acme before.
+          instructions: |
+            Ask one short qualifying question before routing. Keep the greeting warm
+            and avoid assuming the caller already has an account.
+        returning_customer:
+          description: Caller already has an Acme account.
+          instructions: |
+            Ask for the account name early and confirm the goal before using tools.
+
+    telephony:
+      sip_trunk_id: trunk_acme_001
+      inbound_did: "+15551234567"
+      outbound_caller_id: "+15559876543"
+      warm_transfer_target: "+15550001111"
+      dtmf_map:
+        "1": sales
+        "2": support
+        "3": billing
+
+    database:
+      sql:
+        adapter: sqlite
+        schema: acme_corp
+      vector:
+        adapter: none
+        collection: acme_knowledge
+
+    observability:
+      log_level: INFO
+      otel_exporter: none
+      otel_endpoint:
+      emit_session_usage: true
+      emit_turn_metrics: true
+      eval_suite: acme_evals.yaml

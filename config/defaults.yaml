@@ -1,0 +1,75 @@
+pipeline:
+  mode: cascaded
+  stt:
+    provider: livekit_inference
+    model: deepgram/nova-3
+    language: multi
+  llm:
+    provider: livekit_inference
+    model: openai/gpt-5-mini
+    temperature: 0.7
+    max_tokens: 1024
+  tts:
+    provider: livekit_inference
+    model: cartesia/sonic-3
+    voice_id: 9626c31c-bec5-4cca-baa8-f8ba9e84c8bc
+  s2s_model:
+    provider: openai_realtime
+    model: gpt-realtime
+    voice: marin
+    modalities:
+      - text
+      - audio
+
+turn:
+  interruption_mode: adaptive
+  allow_interruptions: true
+  min_endpointing_delay: 0.5
+  max_endpointing_delay: 6.0
+  min_interruption_duration: 0.5
+  min_interruption_words: 0
+  false_interruption_timeout: 2.0
+  resume_false_interruption: true
+  preemptive_generation: false
+
+vad:
+  provider: silero
+  prewarm: true
+
+tools:
+  mcp_servers: []
+  custom_actions: []
+
+conversation:
+  greetings:
+    TriageAgent: "Hi, this is your Acme assistant. How can I help today?"
+  tool_messages:
+    default: "Hmm, one moment please."
+    database_write: "Hmm, please wait while I add your data."
+    ticket_create: "Hmm, please wait while I create that ticket."
+    crm_update: "Hmm, please wait while I update the customer record."
+    email_send: "Hmm, please wait while I prepare that summary."
+  scenarios: {}
+
+telephony:
+  sip_trunk_id:
+  inbound_did:
+  outbound_caller_id:
+  warm_transfer_target:
+  dtmf_map: {}
+
+database:
+  sql:
+    adapter: sqlite
+    schema: public
+  vector:
+    adapter: none
+    collection:
+
+observability:
+  log_level: INFO
+  otel_exporter: none
+  otel_endpoint:
+  emit_session_usage: true
+  emit_turn_metrics: true
+  eval_suite:

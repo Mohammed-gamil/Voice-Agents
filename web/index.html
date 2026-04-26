@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LiveKit Agent Tester</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="panel call-panel">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">LiveKit voice agent</p>
+            <h1>Agent Tester</h1>
+          </div>
+          <div class="status" id="status">Idle</div>
+        </div>
+
+        <div class="controls-grid">
+          <label>
+            LiveKit URL
+            <input id="livekitUrl" autocomplete="off" placeholder="wss://your-project.livekit.cloud" />
+          </label>
+          <label>
+            Tenant
+            <input id="tenantId" autocomplete="off" value="acme_corp" />
+          </label>
+          <label>
+            Agent name
+            <input id="agentName" autocomplete="off" value="tenant-voice-agent" />
+          </label>
+          <label>
+            Room
+            <input id="roomName" autocomplete="off" />
+          </label>
+          <label>
+            Your identity
+            <input id="identity" autocomplete="off" value="tester" />
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="connectBtn" class="primary">Connect</button>
+          <button id="muteBtn" disabled>Mute</button>
+          <button id="disconnectBtn" disabled>Disconnect</button>
+        </div>
+
+        <div class="meters">
+          <div>
+            <span>Mic</span>
+            <div class="meter"><i id="micMeter"></i></div>
+          </div>
+          <div>
+            <span>Agent</span>
+            <div class="meter"><i id="agentMeter"></i></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel transcript-panel">
+        <div class="transcript-head">
+          <h2>Transcript</h2>
+          <button id="clearBtn">Clear</button>
+        </div>
+        <div id="transcript" class="transcript"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" placeholder="Type a message to the agent" autocomplete="off" />
+          <button>Send</button>
+        </form>
+      </section>
+    </main>
+    <audio id="remoteAudio" autoplay></audio>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
