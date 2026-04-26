@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import copy
+import logging
 import os
 import re
+import threading
 from pathlib import Path
 from typing import Any
 
 import yaml
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 from config.schema import RawConfig, TenantConfig, TenantConfigFile
 
+
+logger = logging.getLogger("config-loader")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS_PATH = PROJECT_ROOT / "config" / "defaults.yaml"
@@ -92,7 +98,7 @@ def _resolve_inheritance(
     return _deep_merge(parent_resolved, raw_config)
 
 
-def load_all_tenants(
+def _load_all_tenants_raw(
     tenants_path: Path = TENANTS_PATH,
     defaults_path: Path = DEFAULTS_PATH,
 ) -> dict[str, TenantConfig]:
@@ -102,24 +108,81 @@ def load_all_tenants(
 
     resolved_tenants: dict[str, Any] = {}
     for tenant_id in raw_tenants:
-        # Resolve inheritance for each tenant
         resolved = _resolve_inheritance(tenant_id, raw_tenants, defaults)
-        # Apply environment variable expansion to the final merged result
         resolved = _expand_env(resolved)
-        # Ensure tenant_id is preserved
         resolved["tenant_id"] = tenant_id
         resolved_tenants[tenant_id] = resolved
 
     return TenantConfigFile(tenants=resolved_tenants).tenants
 
 
+class ConfigManager:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __init__(self):
+        self._tenants: dict[str, TenantConfig] = {}
+        self._observer = None
+        self.reload()
+
+    @classmethod
+    def instance(cls) -> ConfigManager:
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls()
+        return cls._instance
+
+    def reload(self) -> None:
+        """Reloads the configuration from disk and validates it."""
+        try:
+            new_tenants = _load_all_tenants_raw()
+            with self._lock:
+                self._tenants = new_tenants
+            logger.info("Configuration loaded successfully.")
+        except Exception as e:
+            logger.error(f"Error reloading configuration: {e}. Keeping previous valid state.")
+            if not self._tenants:
+                raise
+
+    def get_tenant(self, tenant_id: str | None = None) -> TenantConfig:
+        """Returns a cached tenant configuration."""
+        with self._lock:
+            tenants = self._tenants
+        
+        if not tenants:
+            raise RuntimeError("no tenants are configured")
+            
+        resolved_id = tenant_id or next(iter(tenants), None)
+        try:
+            return tenants[resolved_id]
+        except KeyError as exc:
+            known = ", ".join(sorted(tenants))
+            raise KeyError(f"unknown tenant '{resolved_id}'. Configured tenants: {known}") from exc
+
+    def start_watching(self) -> None:
+        """Starts a background thread to watch for configuration changes."""
+        if self._observer:
+            return
+
+        manager = self
+        class ReloadHandler(FileSystemEventHandler):
+            def on_modified(self, event):
+                if Path(event.src_path).resolve() == TENANTS_PATH.resolve():
+                    logger.info("Configuration file change detected. Reloading...")
+                    manager.reload()
+
+        self._observer = Observer()
+        self._observer.schedule(ReloadHandler(), path=str(TENANTS_PATH.parent), recursive=False)
+        self._observer.start()
+        logger.info(f"Started config file watcher on {TENANTS_PATH}")
+
+
 def load_tenant_config(tenant_id: str | None = None) -> TenantConfig:
-    tenants = load_all_tenants()
-    resolved_id = tenant_id or next(iter(tenants), None)
-    if not resolved_id:
-        raise RuntimeError("no tenants are configured")
-    try:
-        return tenants[resolved_id]
-    except KeyError as exc:
-        known = ", ".join(sorted(tenants))
-        raise KeyError(f"unknown tenant '{resolved_id}'. Configured tenants: {known}") from exc
+    """Proxy to the cached ConfigManager instance."""
+    return ConfigManager.instance().get_tenant(tenant_id)
+
+
+def load_all_tenants() -> dict[str, TenantConfig]:
+    """Returns all cached tenant configurations."""
+    return ConfigManager.instance()._tenants
