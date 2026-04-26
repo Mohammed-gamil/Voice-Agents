@@ -1,0 +1,889 @@
+{
+  "$defs": {
+    "AgentRefConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "title": "Class",
+          "type": "string"
+        },
+        "prompt_key": {
+          "title": "Prompt Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "prompt_key"
+      ],
+      "title": "AgentRefConfig",
+      "type": "object"
+    },
+    "AgentsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "triage": {
+          "$ref": "#/$defs/AgentRefConfig"
+        },
+        "routing": {
+          "$ref": "#/$defs/RoutingConfig"
+        }
+      },
+      "required": [
+        "triage"
+      ],
+      "title": "AgentsConfig",
+      "type": "object"
+    },
+    "ConversationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "greetings": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Greetings",
+          "type": "object"
+        },
+        "tool_messages": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Tool Messages",
+          "type": "object"
+        },
+        "scenarios": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ScenarioConfig"
+          },
+          "title": "Scenarios",
+          "type": "object"
+        }
+      },
+      "title": "ConversationConfig",
+      "type": "object"
+    },
+    "DatabaseConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "sql": {
+          "$ref": "#/$defs/SQLConfig"
+        },
+        "vector": {
+          "$ref": "#/$defs/VectorConfig"
+        }
+      },
+      "title": "DatabaseConfig",
+      "type": "object"
+    },
+    "EmailServiceConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "provider": {
+          "const": "smtp",
+          "default": "smtp",
+          "title": "Provider",
+          "type": "string"
+        },
+        "smtp_host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Smtp Host"
+        },
+        "smtp_port": {
+          "default": 587,
+          "title": "Smtp Port",
+          "type": "integer"
+        },
+        "username_env": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "SMTP_USERNAME",
+          "title": "Username Env"
+        },
+        "password_env": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "SMTP_PASSWORD",
+          "title": "Password Env"
+        },
+        "from_email": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "From Email"
+        },
+        "use_tls": {
+          "default": true,
+          "title": "Use Tls",
+          "type": "boolean"
+        }
+      },
+      "title": "EmailServiceConfig",
+      "type": "object"
+    },
+    "HTTPServiceConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "method": {
+          "default": "POST",
+          "enum": [
+            "POST",
+            "PUT",
+            "PATCH"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Headers",
+          "type": "object"
+        },
+        "auth_token_env": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Auth Token Env"
+        },
+        "timeout_seconds": {
+          "default": 10.0,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "title": "HTTPServiceConfig",
+      "type": "object"
+    },
+    "LLMConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "livekit_inference",
+          "enum": [
+            "openai",
+            "anthropic",
+            "livekit_inference"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "default": "openai/gpt-5-mini",
+          "title": "Model",
+          "type": "string"
+        },
+        "temperature": {
+          "default": 0.7,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "max_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1024,
+          "title": "Max Tokens"
+        }
+      },
+      "title": "LLMConfig",
+      "type": "object"
+    },
+    "MCPServerConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "allowed_tools": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Allowed Tools"
+        },
+        "headers": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Headers"
+        }
+      },
+      "required": [
+        "name",
+        "url"
+      ],
+      "title": "MCPServerConfig",
+      "type": "object"
+    },
+    "ObservabilityConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "log_level": {
+          "default": "INFO",
+          "title": "Log Level",
+          "type": "string"
+        },
+        "otel_exporter": {
+          "default": "none",
+          "enum": [
+            "jaeger",
+            "datadog",
+            "otlp",
+            "none"
+          ],
+          "title": "Otel Exporter",
+          "type": "string"
+        },
+        "otel_endpoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Otel Endpoint"
+        },
+        "emit_session_usage": {
+          "default": true,
+          "title": "Emit Session Usage",
+          "type": "boolean"
+        },
+        "emit_turn_metrics": {
+          "default": true,
+          "title": "Emit Turn Metrics",
+          "type": "boolean"
+        },
+        "eval_suite": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Eval Suite"
+        }
+      },
+      "title": "ObservabilityConfig",
+      "type": "object"
+    },
+    "PipelineConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "default": "cascaded",
+          "enum": [
+            "cascaded",
+            "s2s",
+            "hybrid"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "production_confirmed": {
+          "default": false,
+          "title": "Production Confirmed",
+          "type": "boolean"
+        },
+        "stt": {
+          "$ref": "#/$defs/STTConfig"
+        },
+        "llm": {
+          "$ref": "#/$defs/LLMConfig"
+        },
+        "tts": {
+          "$ref": "#/$defs/TTSConfig"
+        },
+        "s2s_model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RealtimeModelConfig"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "title": "PipelineConfig",
+      "type": "object"
+    },
+    "RealtimeModelConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "openai_realtime",
+          "enum": [
+            "openai_realtime",
+            "google_realtime",
+            "xai_realtime"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "default": "gpt-realtime",
+          "title": "Model",
+          "type": "string"
+        },
+        "voice": {
+          "default": "marin",
+          "title": "Voice",
+          "type": "string"
+        },
+        "modalities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Modalities",
+          "type": "array"
+        }
+      },
+      "title": "RealtimeModelConfig",
+      "type": "object"
+    },
+    "RoutingConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/RoutingRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        }
+      },
+      "title": "RoutingConfig",
+      "type": "object"
+    },
+    "RoutingRule": {
+      "additionalProperties": false,
+      "properties": {
+        "intent": {
+          "title": "Intent",
+          "type": "string"
+        },
+        "agent_class": {
+          "title": "Agent Class",
+          "type": "string"
+        },
+        "prompt_key": {
+          "title": "Prompt Key",
+          "type": "string"
+        }
+      },
+      "required": [
+        "intent",
+        "agent_class",
+        "prompt_key"
+      ],
+      "title": "RoutingRule",
+      "type": "object"
+    },
+    "SQLConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "default": "sqlite",
+          "enum": [
+            "postgresql",
+            "sqlite"
+          ],
+          "title": "Adapter",
+          "type": "string"
+        },
+        "schema": {
+          "default": "public",
+          "title": "Schema",
+          "type": "string"
+        },
+        "dsn": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dsn"
+        }
+      },
+      "title": "SQLConfig",
+      "type": "object"
+    },
+    "STTConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "livekit_inference",
+          "enum": [
+            "deepgram",
+            "assemblyai",
+            "livekit_inference"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "default": "deepgram/nova-3",
+          "title": "Model",
+          "type": "string"
+        },
+        "language": {
+          "default": "multi",
+          "title": "Language",
+          "type": "string"
+        }
+      },
+      "title": "STTConfig",
+      "type": "object"
+    },
+    "ScenarioConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "instructions": {
+          "title": "Instructions",
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "instructions"
+      ],
+      "title": "ScenarioConfig",
+      "type": "object"
+    },
+    "TTSConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "livekit_inference",
+          "enum": [
+            "openai",
+            "cartesia",
+            "elevenlabs",
+            "livekit_inference"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "default": "cartesia/sonic-3",
+          "title": "Model",
+          "type": "string"
+        },
+        "voice_id": {
+          "default": "9626c31c-bec5-4cca-baa8-f8ba9e84c8bc",
+          "title": "Voice Id",
+          "type": "string"
+        }
+      },
+      "title": "TTSConfig",
+      "type": "object"
+    },
+    "TelephonyConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "sip_trunk_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sip Trunk Id"
+        },
+        "inbound_did": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inbound Did"
+        },
+        "outbound_caller_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outbound Caller Id"
+        },
+        "warm_transfer_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Warm Transfer Target"
+        },
+        "dtmf_map": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Dtmf Map",
+          "type": "object"
+        }
+      },
+      "title": "TelephonyConfig",
+      "type": "object"
+    },
+    "TenantConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": {
+          "default": "",
+          "title": "Tenant Id",
+          "type": "string"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "pipeline": {
+          "$ref": "#/$defs/PipelineConfig"
+        },
+        "turn": {
+          "$ref": "#/$defs/TurnConfig"
+        },
+        "vad": {
+          "$ref": "#/$defs/VADConfig"
+        },
+        "agents": {
+          "$ref": "#/$defs/AgentsConfig"
+        },
+        "prompts": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Prompts",
+          "type": "object"
+        },
+        "tools": {
+          "$ref": "#/$defs/ToolsConfig"
+        },
+        "conversation": {
+          "$ref": "#/$defs/ConversationConfig"
+        },
+        "telephony": {
+          "$ref": "#/$defs/TelephonyConfig"
+        },
+        "database": {
+          "$ref": "#/$defs/DatabaseConfig"
+        },
+        "observability": {
+          "$ref": "#/$defs/ObservabilityConfig"
+        }
+      },
+      "required": [
+        "display_name",
+        "agents",
+        "prompts"
+      ],
+      "title": "TenantConfig",
+      "type": "object"
+    },
+    "ToolIntegrationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "ticketing": {
+          "$ref": "#/$defs/HTTPServiceConfig"
+        },
+        "crm": {
+          "$ref": "#/$defs/HTTPServiceConfig"
+        },
+        "email": {
+          "$ref": "#/$defs/EmailServiceConfig"
+        }
+      },
+      "title": "ToolIntegrationConfig",
+      "type": "object"
+    },
+    "ToolsConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "mcp_servers": {
+          "items": {
+            "$ref": "#/$defs/MCPServerConfig"
+          },
+          "title": "Mcp Servers",
+          "type": "array"
+        },
+        "custom_actions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Custom Actions",
+          "type": "array"
+        },
+        "integrations": {
+          "$ref": "#/$defs/ToolIntegrationConfig"
+        }
+      },
+      "title": "ToolsConfig",
+      "type": "object"
+    },
+    "TurnConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "interruption_mode": {
+          "default": "adaptive",
+          "enum": [
+            "vad",
+            "adaptive"
+          ],
+          "title": "Interruption Mode",
+          "type": "string"
+        },
+        "turn_detection": {
+          "anyOf": [
+            {
+              "enum": [
+                "vad",
+                "stt",
+                "realtime_llm",
+                "manual"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Turn Detection"
+        },
+        "allow_interruptions": {
+          "default": true,
+          "title": "Allow Interruptions",
+          "type": "boolean"
+        },
+        "min_endpointing_delay": {
+          "default": 0.5,
+          "title": "Min Endpointing Delay",
+          "type": "number"
+        },
+        "max_endpointing_delay": {
+          "default": 6.0,
+          "title": "Max Endpointing Delay",
+          "type": "number"
+        },
+        "min_interruption_duration": {
+          "default": 0.5,
+          "title": "Min Interruption Duration",
+          "type": "number"
+        },
+        "min_interruption_words": {
+          "default": 0,
+          "title": "Min Interruption Words",
+          "type": "integer"
+        },
+        "false_interruption_timeout": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 2.0,
+          "title": "False Interruption Timeout"
+        },
+        "resume_false_interruption": {
+          "default": true,
+          "title": "Resume False Interruption",
+          "type": "boolean"
+        },
+        "preemptive_generation": {
+          "default": false,
+          "title": "Preemptive Generation",
+          "type": "boolean"
+        }
+      },
+      "title": "TurnConfig",
+      "type": "object"
+    },
+    "VADConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "silero",
+          "enum": [
+            "silero",
+            "webrtc",
+            "none"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "prewarm": {
+          "default": true,
+          "title": "Prewarm",
+          "type": "boolean"
+        }
+      },
+      "title": "VADConfig",
+      "type": "object"
+    },
+    "VectorConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "default": "none",
+          "enum": [
+            "pgvector",
+            "pinecone",
+            "qdrant",
+            "none"
+          ],
+          "title": "Adapter",
+          "type": "string"
+        },
+        "collection": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collection"
+        }
+      },
+      "title": "VectorConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "tenants": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TenantConfig"
+      },
+      "title": "Tenants",
+      "type": "object"
+    }
+  },
+  "required": [
+    "tenants"
+  ],
+  "title": "TenantConfigFile",
+  "type": "object"
+}

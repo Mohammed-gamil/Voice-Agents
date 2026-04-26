@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./tenant_config.schema.json
 tenants:
   acme_corp:
     display_name: Acme Corp Assistant
