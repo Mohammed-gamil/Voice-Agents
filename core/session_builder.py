@@ -2,36 +2,30 @@ from __future__ import annotations
 
 from typing import Any
 
-from livekit.agents import AgentSession, mcp
+from livekit.agents import mcp
 
 from config.schema import TenantConfig
 from core.Database.HybridDB_Client import HybridDBClient
 from core.Pipeline.PipelineFactory import build_pipeline
 from core.conversation import ConversationData
+from agents.base import TenantAgent
 
 
-def build_agent_session(config: TenantConfig, *, prewarmed_vad: Any | None = None) -> AgentSession[ConversationData]:
+def build_agent_session(config: TenantConfig, *, prewarmed_vad: Any | None = None) -> TenantAgent:
     pipeline = build_pipeline(config.pipeline, config.vad, prewarmed_vad=prewarmed_vad)
-    kwargs: dict[str, Any] = {
-        "llm": pipeline.llm,
-        "userdata": ConversationData(
-            tenant_id=config.tenant_id,
-            tool_messages=config.conversation.tool_messages,
-            integrations=config.tools.integrations,
-            db=HybridDBClient(config.database),
-        ),
-        "turn_handling": _turn_handling(config),
-        "mcp_servers": _mcp_servers(config),
-    }
-
-    if pipeline.vad is not None:
-        kwargs["vad"] = pipeline.vad
-    if pipeline.stt is not None:
-        kwargs["stt"] = pipeline.stt
-    if pipeline.tts is not None:
-        kwargs["tts"] = pipeline.tts
-
-    return AgentSession[ConversationData](**kwargs)
+    
+    # We set up ConversationData and potentially pass it if we were doing custom context.
+    # But VoicePipelineAgent just needs the components.
+    
+    return TenantAgent(
+        config=config,
+        prompt_key="default",
+        vad=pipeline.vad,
+        stt=pipeline.stt,
+        llm_plugin=pipeline.llm,
+        tts=pipeline.tts,
+        turn_handling=_turn_handling(config) if config.turn else None,
+    )
 
 
 def _turn_handling(config: TenantConfig) -> dict[str, Any]:
