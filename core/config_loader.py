@@ -27,7 +27,16 @@ def _read_yaml(path: Path) -> RawConfig:
 def _deep_merge(base: RawConfig, override: RawConfig) -> RawConfig:
     merged = copy.deepcopy(base)
     for key, value in override.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+        # Check for list append marker
+        if isinstance(value, dict) and "append" in value and len(value) == 1:
+            append_val = value["append"]
+            if not isinstance(append_val, list):
+                raise ValueError(f"Marker 'append' for key '{key}' must contain a list.")
+            base_list = merged.get(key, [])
+            if not isinstance(base_list, list):
+                base_list = []  # Fallback if parent wasn't a list
+            merged[key] = base_list + copy.deepcopy(append_val)
+        elif isinstance(value, dict) and isinstance(merged.get(key), dict):
             merged[key] = _deep_merge(merged[key], value)
         else:
             merged[key] = copy.deepcopy(value)
