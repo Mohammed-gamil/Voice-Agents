@@ -65,6 +65,7 @@ def _tenant_id_from_room(ctx: JobContext) -> str | None:
 
 
 def main() -> None:
+    ConfigManager.instance().start_watching()
     cli.run_app(server)
 
 
