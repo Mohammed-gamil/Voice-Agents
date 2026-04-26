@@ -29,6 +29,11 @@ All notable project changes will be documented in this file.
 - Added `ui_server.py` to serve the test UI and generate LiveKit room tokens.
 - Added `TECHNICAL_GUIDE.md` with setup, runtime, extension, testing, and troubleshooting guidance.
 - Added `TODO.md` for implementation follow-up work.
+- Added generic HTTP integrations for ticketing and CRM custom actions.
+- Added SMTP integration support for summary emails.
+- Added durable SQLite and PostgreSQL database adapters.
+- Added tenant-specific eval fixtures for Acme routing, tool progress, ticketing, CRM, billing, and email flows.
+- Added UI access guardrails with localhost-only default binding and optional `UI_AUTH_TOKEN`.
 
 ### Changed
 
@@ -38,6 +43,9 @@ All notable project changes will be documented in this file.
 - Updated `.env.example` with tenant, agent, and provider-key settings.
 - Expanded `README.md` to describe the project layout and local UI workflow.
 - Updated `.gitignore` to ignore local log files.
+- Switched the Acme tenant SQL adapter to PostgreSQL using `DATABASE_DSN`.
+- Updated custom actions to persist writes through the configured database adapter.
+- Updated custom actions to call external ticketing, CRM, and SMTP services when enabled.
 
 ### Notes
 

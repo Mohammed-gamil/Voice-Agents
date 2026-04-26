@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +14,7 @@ from config.schema import RawConfig, TenantConfig, TenantConfigFile
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS_PATH = PROJECT_ROOT / "config" / "defaults.yaml"
 TENANTS_PATH = PROJECT_ROOT / "config" / "tenant_config.yaml"
+ENV_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
 
 def _read_yaml(path: Path) -> RawConfig:
@@ -31,6 +34,16 @@ def _deep_merge(base: RawConfig, override: RawConfig) -> RawConfig:
     return merged
 
 
+def _expand_env(value: Any) -> Any:
+    if isinstance(value, str):
+        return ENV_PATTERN.sub(lambda match: os.getenv(match.group(1), match.group(0)), value)
+    if isinstance(value, list):
+        return [_expand_env(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _expand_env(item) for key, item in value.items()}
+    return value
+
+
 def load_all_tenants(
     tenants_path: Path = TENANTS_PATH,
     defaults_path: Path = DEFAULTS_PATH,
@@ -41,7 +54,7 @@ def load_all_tenants(
     merged: dict[str, Any] = {"tenants": {}}
 
     for tenant_id, tenant_config in tenants.items():
-        resolved = _deep_merge(defaults, tenant_config or {})
+        resolved = _expand_env(_deep_merge(defaults, tenant_config or {}))
         resolved["tenant_id"] = tenant_id
         merged["tenants"][tenant_id] = resolved
 

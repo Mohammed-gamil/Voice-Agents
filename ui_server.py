@@ -24,6 +24,9 @@ class UITestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path == "/api/config":
+            if not self._authorized():
+                self._send_json({"error": "unauthorized"}, status=HTTPStatus.UNAUTHORIZED)
+                return
             self._send_json(
                 {
                     "livekitUrl": os.getenv("LIVEKIT_URL", ""),
@@ -53,6 +56,9 @@ class UITestHandler(BaseHTTPRequestHandler):
         if parsed.path != "/api/token":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
+        if not self._authorized():
+            self._send_json({"error": "unauthorized"}, status=HTTPStatus.UNAUTHORIZED)
+            return
 
         try:
             payload = self._read_json()
@@ -79,6 +85,17 @@ class UITestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
+
+    def _authorized(self) -> bool:
+        expected = os.getenv("UI_AUTH_TOKEN")
+        if not expected:
+            return True
+        parsed = urlparse(self.path)
+        query_token = parse_qs(parsed.query).get("token", [""])[0]
+        header_token = self.headers.get("X-UI-Token", "")
+        auth = self.headers.get("Authorization", "")
+        bearer_token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
+        return expected in {query_token, header_token, bearer_token}
 
 
 def create_token(payload: dict[str, str]) -> dict[str, str]:
@@ -137,6 +154,11 @@ def main() -> None:
     qs = parse_qs(os.getenv("QUERY_STRING", ""))
     if "port" in qs:
         port = int(qs["port"][0])
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        if os.getenv("UI_ALLOW_REMOTE", "").lower() != "true":
+            raise RuntimeError("Set UI_ALLOW_REMOTE=true before binding the UI outside localhost")
+        if not os.getenv("UI_AUTH_TOKEN"):
+            raise RuntimeError("Set UI_AUTH_TOKEN before exposing the UI outside localhost")
 
     httpd = ThreadingHTTPServer((host, port), UITestHandler)
     print(f"LiveKit agent test UI: http://{host}:{port}")

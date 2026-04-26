@@ -5,6 +5,7 @@ import logging
 from livekit.agents import RunContext, function_tool
 
 from core.conversation import ConversationData
+from tools.custom_actions.integrations import post_json
 from tools.custom_actions.progress import speak_tool_progress
 
 
@@ -28,5 +29,20 @@ async def update_crm_record(
 
     await speak_tool_progress(context, "crm_update")
     context.userdata.remember(f"crm.{account_name}.{field}", value)
+    await context.userdata.db.update_crm_record(context.userdata.tenant_id, account_name, field, value)
+    await context.userdata.db.remember_conversation_fact(
+        context.userdata.tenant_id,
+        f"crm.{account_name}.{field}",
+        value,
+    )
+    await post_json(
+        context.userdata.integrations.crm,
+        {
+            "tenant_id": context.userdata.tenant_id,
+            "account_name": account_name,
+            "field": field,
+            "value": value,
+        },
+    )
     logger.info("updated CRM record for %s: %s=%s", account_name, field, value)
-    return f"Updated {field} for {account_name}."
+    return f"Updated {field} for {account_name} and saved the change."

@@ -40,6 +40,7 @@ class RealtimeModelConfig(StrictModel):
 
 class PipelineConfig(StrictModel):
     mode: PipelineMode = "cascaded"
+    production_confirmed: bool = False
     stt: STTConfig = Field(default_factory=STTConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     tts: TTSConfig = Field(default_factory=TTSConfig)
@@ -92,9 +93,36 @@ class MCPServerConfig(StrictModel):
     headers: dict[str, str] | None = None
 
 
+class HTTPServiceConfig(StrictModel):
+    enabled: bool = False
+    url: str | None = None
+    method: Literal["POST", "PUT", "PATCH"] = "POST"
+    headers: dict[str, str] = Field(default_factory=dict)
+    auth_token_env: str | None = None
+    timeout_seconds: float = 10.0
+
+
+class EmailServiceConfig(StrictModel):
+    enabled: bool = False
+    provider: Literal["smtp"] = "smtp"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    username_env: str | None = "SMTP_USERNAME"
+    password_env: str | None = "SMTP_PASSWORD"
+    from_email: str | None = None
+    use_tls: bool = True
+
+
+class ToolIntegrationConfig(StrictModel):
+    ticketing: HTTPServiceConfig = Field(default_factory=HTTPServiceConfig)
+    crm: HTTPServiceConfig = Field(default_factory=HTTPServiceConfig)
+    email: EmailServiceConfig = Field(default_factory=EmailServiceConfig)
+
+
 class ToolsConfig(StrictModel):
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
     custom_actions: list[str] = Field(default_factory=list)
+    integrations: ToolIntegrationConfig = Field(default_factory=ToolIntegrationConfig)
 
 
 class ScenarioConfig(StrictModel):

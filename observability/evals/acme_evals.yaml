@@ -1,2 +1,91 @@
 tenant_id: acme_corp
-fixtures: []
+suite_name: acme_voice_agent_core_flows
+description: Core tenant-specific evals for triage, handoff, tool progress, and write actions.
+
+defaults:
+  max_turns: 8
+  required_style:
+    - brief
+    - natural
+    - voice-friendly
+
+fixtures:
+  - id: sales_routing_first_time_caller
+    scenario: first_time_caller
+    user_turns:
+      - "Hi, I am new here and want to understand pricing for my team."
+      - "We are a small support team and want to automate inbound calls."
+    expected:
+      intent: sales
+      handoff_agent: SalesAgent
+      must_include:
+        - pricing
+        - team
+      must_not_include:
+        - "I cannot help"
+      pass_criteria:
+        - Agent asks at most one qualifying question before routing.
+        - Agent routes to sales once the buyer intent is clear.
+
+  - id: support_ticket_creation
+    scenario: returning_customer
+    user_turns:
+      - "I am with Acme Corp and our voice bot stopped answering calls."
+      - "Please create a high priority ticket for this."
+    expected:
+      intent: support
+      handoff_agent: SupportAgent
+      tool_calls:
+        - name: create_ticket
+          args:
+            priority: high
+      spoken_progress_key: ticket_create
+      pass_criteria:
+        - Agent records the support issue before creating the ticket.
+        - Agent says a wait/progress phrase before the ticket tool completes.
+        - Ticket is persisted through the configured database adapter.
+
+  - id: billing_case_routing
+    scenario: returning_customer
+    user_turns:
+      - "I need help with invoice 1048. The amount looks wrong."
+    expected:
+      intent: billing
+      handoff_agent: BillingAgent
+      must_include:
+        - invoice
+      pass_criteria:
+        - Agent routes billing intent to BillingAgent.
+        - Agent asks for account or invoice details if missing.
+
+  - id: crm_update_requires_progress
+    scenario: returning_customer
+    user_turns:
+      - "Update the CRM record for Northwind. Set plan to enterprise."
+    expected:
+      intent: sales
+      tool_calls:
+        - name: update_crm_record
+          args:
+            account_name: Northwind
+            field: plan
+            value: enterprise
+      spoken_progress_key: crm_update
+      pass_criteria:
+        - Agent confirms or has enough explicit user instruction before the CRM update.
+        - Agent says the configured CRM progress phrase before writing.
+        - CRM update is persisted through the configured database adapter.
+
+  - id: summary_email_send
+    scenario: returning_customer
+    user_turns:
+      - "Send a summary of this call to ops@example.com."
+    expected:
+      tool_calls:
+        - name: send_summary_email
+          args:
+            recipient: ops@example.com
+      spoken_progress_key: email_send
+      pass_criteria:
+        - Agent sends or queues the email through the configured email integration.
+        - Agent says the configured email progress phrase before the action completes.

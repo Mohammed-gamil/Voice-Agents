@@ -5,6 +5,7 @@ from typing import Any
 from livekit.agents import AgentSession, mcp
 
 from config.schema import TenantConfig
+from core.Database.HybridDB_Client import HybridDBClient
 from core.Pipeline.PipelineFactory import build_pipeline
 from core.conversation import ConversationData
 
@@ -16,6 +17,8 @@ def build_agent_session(config: TenantConfig, *, prewarmed_vad: Any | None = Non
         "userdata": ConversationData(
             tenant_id=config.tenant_id,
             tool_messages=config.conversation.tool_messages,
+            integrations=config.tools.integrations,
+            db=HybridDBClient(config.database),
         ),
         "turn_handling": _turn_handling(config),
         "mcp_servers": _mcp_servers(config),

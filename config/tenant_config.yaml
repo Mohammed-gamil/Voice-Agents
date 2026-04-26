@@ -4,6 +4,7 @@ tenants:
 
     pipeline:
       mode: hybrid
+      production_confirmed: true
       stt:
         provider: livekit_inference
         model: deepgram/nova-3
@@ -81,6 +82,30 @@ tenants:
         - create_ticket
         - update_crm_record
         - send_summary_email
+      integrations:
+        ticketing:
+          enabled: false
+          url: ${TICKETING_WEBHOOK_URL}
+          method: POST
+          headers: {}
+          auth_token_env: TICKETING_API_TOKEN
+          timeout_seconds: 10.0
+        crm:
+          enabled: false
+          url: ${CRM_WEBHOOK_URL}
+          method: POST
+          headers: {}
+          auth_token_env: CRM_API_TOKEN
+          timeout_seconds: 10.0
+        email:
+          enabled: false
+          provider: smtp
+          smtp_host: ${SMTP_HOST}
+          smtp_port: 587
+          username_env: SMTP_USERNAME
+          password_env: SMTP_PASSWORD
+          from_email: ${SMTP_FROM_EMAIL}
+          use_tls: true
 
     conversation:
       greetings:
@@ -117,8 +142,9 @@ tenants:
 
     database:
       sql:
-        adapter: sqlite
+        adapter: postgresql
         schema: acme_corp
+        dsn: ${DATABASE_DSN}
       vector:
         adapter: none
         collection: acme_knowledge

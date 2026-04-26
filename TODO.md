@@ -4,14 +4,19 @@ This list tracks the next practical steps for turning the current LiveKit voice-
 
 ## High Priority
 
-- Replace placeholder custom actions with real service integrations:
-  - `create_ticket`
-  - `update_crm_record`
-  - `send_summary_email`
-- Implement durable database adapters in `core/Database/adapters/`.
-- Add real tenant-specific eval suites under `observability/evals/`.
-- Add authentication or local-network restrictions before exposing `ui_server.py` outside local development.
-- Confirm production model/provider choices for each tenant in `config/tenant_config.yaml`.
+- Wire production credentials in `.env.local` or deployment secrets:
+  - `DATABASE_DSN`
+  - `TICKETING_WEBHOOK_URL`
+  - `TICKETING_API_TOKEN`
+  - `CRM_WEBHOOK_URL`
+  - `CRM_API_TOKEN`
+  - `SMTP_HOST`
+  - `SMTP_USERNAME`
+  - `SMTP_PASSWORD`
+  - `SMTP_FROM_EMAIL`
+- Decide whether to enable outbound ticketing, CRM, and SMTP integrations per tenant.
+- Add a CI job that runs config validation and compile checks.
+- Add a real eval runner that executes `observability/evals/acme_evals.yaml`.
 
 ## Agent Behavior
 
@@ -48,3 +53,12 @@ This list tracks the next practical steps for turning the current LiveKit voice-
 - Add `.env.production.example`.
 - Add CI checks for compile, config validation, and linting.
 - Document LiveKit Cloud deployment steps.
+
+## Completed
+
+- Replaced placeholder custom actions with durable database writes and optional HTTP/SMTP integrations.
+- Implemented SQLite and PostgreSQL database adapters.
+- Switched the default Acme tenant to PostgreSQL.
+- Added tenant-specific eval fixtures under `observability/evals/acme_evals.yaml`.
+- Added local UI authentication and remote-exposure guardrails.
+- Confirmed production model/provider choices in `config/tenant_config.yaml`.

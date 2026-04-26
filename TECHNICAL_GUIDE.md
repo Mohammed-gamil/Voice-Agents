@@ -47,12 +47,13 @@ LIVEKIT_AGENT_NAME=tenant-voice-agent
 TENANT_ID=acme_corp
 ```
 
-Provider keys depend on the tenant config:
+Provider keys and database settings depend on the tenant config:
 
 ```env
 OPENAI_API_KEY=required_for_openai_direct_or_realtime
 DEEPGRAM_API_KEY=required_for_deepgram_direct
 CARTESIA_API_KEY=required_for_cartesia_direct
+DATABASE_DSN=postgresql://voice_agent:change_me@localhost:5432/voice_agents
 ```
 
 The default tenant uses LiveKit Inference descriptors for the cascaded pipeline, so LiveKit credentials are the main required keys. If you switch to direct provider plugins or S2S realtime mode, add the matching provider key.
@@ -337,6 +338,36 @@ context.disallow_interruptions()
 
 This prevents user speech from cancelling the operation midway.
 
+### Production Integrations
+
+The built-in starter tools now do real work in two layers:
+
+1. Persist the action through the configured database adapter.
+2. Optionally call an external service if the tenant integration is enabled.
+
+Tenant integration config:
+
+```yaml
+tools:
+  integrations:
+    ticketing:
+      enabled: true
+      url: ${TICKETING_WEBHOOK_URL}
+      auth_token_env: TICKETING_API_TOKEN
+    crm:
+      enabled: true
+      url: ${CRM_WEBHOOK_URL}
+      auth_token_env: CRM_API_TOKEN
+    email:
+      enabled: true
+      smtp_host: ${SMTP_HOST}
+      username_env: SMTP_USERNAME
+      password_env: SMTP_PASSWORD
+      from_email: ${SMTP_FROM_EMAIL}
+```
+
+When `enabled: false`, the tool still writes to the tenant database. This is useful for local development and offline tests. When enabled, ticketing and CRM calls send JSON over HTTP with an optional bearer token. Email uses SMTP.
+
 ## 11. Greetings, Scenarios, And Tool Progress Phrases
 
 Conversation behavior that changes per tenant should usually live in YAML, not Python.
@@ -468,9 +499,54 @@ core/Database/HybridDB_Client.py
 core/Database/adapters/
 ```
 
-These are intentionally thin right now. The tenant schema already has fields for SIP trunking, warm transfer targets, SQL adapter selection, and vector adapter selection. Production implementations should fill these adapters without changing the agent code.
+The default tenant is configured for PostgreSQL:
 
-## 15. Common Commands
+```yaml
+database:
+  sql:
+    adapter: postgresql
+    schema: acme_corp
+    dsn: ${DATABASE_DSN}
+```
+
+`core/Database/adapters/postgresql.py` creates the tenant schema and durable tables on startup. The SQLite adapter remains available for quick local experiments, but production tenants should use PostgreSQL.
+
+Expected PostgreSQL setup:
+
+```sql
+CREATE DATABASE voice_agents;
+CREATE USER voice_agent WITH PASSWORD 'change_me';
+GRANT ALL PRIVILEGES ON DATABASE voice_agents TO voice_agent;
+```
+
+Then set:
+
+```env
+DATABASE_DSN=postgresql://voice_agent:change_me@localhost:5432/voice_agents
+```
+
+The adapter creates the tenant schema from `database.sql.schema` and manages these tables:
+
+```text
+conversation_facts
+tickets
+crm_records
+email_outbox
+```
+
+## 15. Eval Suites
+
+Tenant eval suites live under `observability/evals/`.
+
+The Acme suite is:
+
+```text
+observability/evals/acme_evals.yaml
+```
+
+It defines fixtures for sales routing, support ticket creation, billing routing, CRM updates, and summary email behavior. A future CI runner should execute these fixtures against a test LiveKit room or a model-level harness.
+
+## 16. Common Commands
 
 Validate Python syntax:
 
@@ -503,11 +579,23 @@ set UI_PORT=8770
 python ui_server.py
 ```
 
-## 16. Troubleshooting
+## 17. Troubleshooting
 
 `LIVEKIT_API_KEY and LIVEKIT_API_SECRET are required`
 
 Check `.env.local`. The UI token endpoint cannot generate a room token without both values.
+
+`database.sql.dsn is required for PostgreSQL`
+
+Set `DATABASE_DSN` in `.env.local` or deployment secrets.
+
+`enabled HTTP integration requires a concrete url`
+
+An integration was enabled but its webhook URL env var is missing.
+
+`unauthorized` from the UI API
+
+If `UI_AUTH_TOKEN` is set, open the UI with `?token=your-token` or send `X-UI-Token`.
 
 `The api_key client option must be set`
 
@@ -529,7 +617,7 @@ Config validation fails
 
 The Pydantic schema forbids unknown keys. Compare the tenant YAML with `config/schema.py` and `config/defaults.yaml`.
 
-## 17. Production Notes
+## 18. Production Notes
 
 For production:
 

@@ -28,6 +28,7 @@ let room;
 let micMuted = false;
 let meterTimer;
 const transcriptSegments = new Map();
+const uiToken = new URLSearchParams(window.location.search).get("token") || "";
 
 init();
 
@@ -35,7 +36,7 @@ async function init() {
   els.roomName.value = `agent-test-${Math.random().toString(36).slice(2, 8)}`;
   renderEmpty();
   try {
-    const res = await fetch("/api/config");
+    const res = await fetch(withToken("/api/config"), authOptions());
     const config = await res.json();
     els.livekitUrl.value = config.livekitUrl || "";
     els.tenantId.value = config.tenantId || "acme_corp";
@@ -59,8 +60,9 @@ async function connect() {
   setBusy(true);
   try {
     const tokenRes = await fetch("/api/token", {
+      ...authOptions(),
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       body: JSON.stringify({
         livekitUrl: els.livekitUrl.value,
         room: els.roomName.value,
@@ -259,4 +261,19 @@ function remoteAudioLevel(activeRoom) {
     level = Math.max(level, participant.audioLevel || 0);
   });
   return level;
+}
+
+function withToken(path) {
+  if (!uiToken) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}token=${encodeURIComponent(uiToken)}`;
+}
+
+function authOptions() {
+  const headers = authHeaders();
+  return Object.keys(headers).length ? { headers } : {};
+}
+
+function authHeaders() {
+  return uiToken ? { "X-UI-Token": uiToken } : {};
 }

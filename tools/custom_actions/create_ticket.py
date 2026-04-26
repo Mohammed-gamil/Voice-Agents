@@ -5,6 +5,7 @@ import logging
 from livekit.agents import RunContext, function_tool
 
 from core.conversation import ConversationData
+from tools.custom_actions.integrations import post_json
 from tools.custom_actions.progress import speak_tool_progress
 
 
@@ -27,6 +28,18 @@ async def create_ticket(
     """
 
     await speak_tool_progress(context, "ticket_create")
-    ticket_id = f"{context.userdata.tenant_id.upper()}-TICKET"
+    payload = {
+        "tenant_id": context.userdata.tenant_id,
+        "title": title,
+        "description": description,
+        "priority": priority,
+    }
+    ticket_id = await context.userdata.db.create_ticket(context.userdata.tenant_id, payload)
+    payload["ticket_id"] = ticket_id
+    integration_result = await post_json(context.userdata.integrations.ticketing, payload)
+
     logger.info("created ticket %s with priority %s", ticket_id, priority)
-    return f"Created ticket {ticket_id}."
+    if integration_result:
+        external_id = integration_result.get("id") or integration_result.get("ticket_id") or integration_result.get("status")
+        return f"Created ticket {ticket_id}. External service result: {external_id}."
+    return f"Created ticket {ticket_id} and stored it in the tenant database."

@@ -1,5 +1,6 @@
 pipeline:
   mode: cascaded
+  production_confirmed: false
   stt:
     provider: livekit_inference
     model: deepgram/nova-3
@@ -39,6 +40,30 @@ vad:
 tools:
   mcp_servers: []
   custom_actions: []
+  integrations:
+    ticketing:
+      enabled: false
+      url:
+      method: POST
+      headers: {}
+      auth_token_env:
+      timeout_seconds: 10.0
+    crm:
+      enabled: false
+      url:
+      method: POST
+      headers: {}
+      auth_token_env:
+      timeout_seconds: 10.0
+    email:
+      enabled: false
+      provider: smtp
+      smtp_host:
+      smtp_port: 587
+      username_env: SMTP_USERNAME
+      password_env: SMTP_PASSWORD
+      from_email:
+      use_tls: true
 
 conversation:
   greetings:
