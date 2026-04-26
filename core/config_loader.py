@@ -14,7 +14,7 @@ from config.schema import RawConfig, TenantConfig, TenantConfigFile
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULTS_PATH = PROJECT_ROOT / "config" / "defaults.yaml"
 TENANTS_PATH = PROJECT_ROOT / "config" / "tenant_config.yaml"
-ENV_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+ENV_PATTERN = re.compile(r"\$\{([A-Za-z0-9_]+)(?::([^}]*))?\}")
 
 
 def _read_yaml(path: Path) -> RawConfig:
@@ -36,7 +36,16 @@ def _deep_merge(base: RawConfig, override: RawConfig) -> RawConfig:
 
 def _expand_env(value: Any) -> Any:
     if isinstance(value, str):
-        return ENV_PATTERN.sub(lambda match: os.getenv(match.group(1), match.group(0)), value)
+        def repl(match: re.Match) -> str:
+            var_name = match.group(1)
+            default_val = match.group(2)
+            env_val = os.getenv(var_name)
+            if env_val is not None:
+                return env_val
+            if default_val is not None:
+                return default_val
+            raise ValueError(f"Missing environment variable: {var_name}")
+        return ENV_PATTERN.sub(repl, value)
     if isinstance(value, list):
         return [_expand_env(item) for item in value]
     if isinstance(value, dict):
