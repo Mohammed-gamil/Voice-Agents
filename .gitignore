@@ -3,3 +3,7 @@ venv/
 .DS_Store
 *.log
 data/
+
+.gemini/
+.worktrees/
+gha-creds-*.json
