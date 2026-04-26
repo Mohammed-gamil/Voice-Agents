@@ -62,21 +62,55 @@ def _expand_env(value: Any) -> Any:
     return value
 
 
+def _resolve_inheritance(
+    tenant_id: str,
+    all_raw: dict[str, Any],
+    defaults: RawConfig,
+    seen: set[str] | None = None,
+) -> RawConfig:
+    if seen is None:
+        seen = set()
+
+    if tenant_id in seen:
+        chain = " -> ".join(list(seen) + [tenant_id])
+        raise ValueError(f"Circular inheritance detected: {chain}")
+
+    seen.add(tenant_id)
+
+    raw_config = all_raw.get(tenant_id)
+    if raw_config is None:
+        raise KeyError(f"Parent tenant '{tenant_id}' not found in configuration.")
+
+    parent_id = raw_config.get("extends")
+
+    # Base case: no inheritance or root of chain
+    if not parent_id:
+        return _deep_merge(defaults, raw_config)
+
+    # Recursive case: merge child into resolved parent
+    parent_resolved = _resolve_inheritance(parent_id, all_raw, defaults, seen)
+    return _deep_merge(parent_resolved, raw_config)
+
+
 def load_all_tenants(
     tenants_path: Path = TENANTS_PATH,
     defaults_path: Path = DEFAULTS_PATH,
 ) -> dict[str, TenantConfig]:
     defaults = _read_yaml(defaults_path)
-    raw_tenants = _read_yaml(tenants_path)
-    tenants = raw_tenants.get("tenants", {})
-    merged: dict[str, Any] = {"tenants": {}}
+    raw_file = _read_yaml(tenants_path)
+    raw_tenants = raw_file.get("tenants", {})
 
-    for tenant_id, tenant_config in tenants.items():
-        resolved = _expand_env(_deep_merge(defaults, tenant_config or {}))
+    resolved_tenants: dict[str, Any] = {}
+    for tenant_id in raw_tenants:
+        # Resolve inheritance for each tenant
+        resolved = _resolve_inheritance(tenant_id, raw_tenants, defaults)
+        # Apply environment variable expansion to the final merged result
+        resolved = _expand_env(resolved)
+        # Ensure tenant_id is preserved
         resolved["tenant_id"] = tenant_id
-        merged["tenants"][tenant_id] = resolved
+        resolved_tenants[tenant_id] = resolved
 
-    return TenantConfigFile.model_validate(merged).tenants
+    return TenantConfigFile(tenants=resolved_tenants).tenants
 
 
 def load_tenant_config(tenant_id: str | None = None) -> TenantConfig:
